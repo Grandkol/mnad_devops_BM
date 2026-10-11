@@ -1,13 +1,9 @@
-# Вариант 2: многоступенчатая сборка
 FROM python:3.11.6-slim-bookworm AS base
 
 
 FROM base AS build
 SHELL [ "/bin/sh", "-eu", "-c" ]
 WORKDIR /build
-
-# Poetry и инструменты сборки пакетов.
-# poetry-plugin-export: в Poetry 2.x команда `poetry export` вынесена в плагин
 RUN \
   python -m pip install \
     --no-color \
@@ -22,7 +18,6 @@ RUN \
 COPY pyproject.toml poetry.lock README.md ./
 COPY src/ src/
 
-# Загрузка всех зависимостей в dist/vendor
 RUN \
   mkdir -p dist \
   && poetry export \
@@ -35,7 +30,6 @@ RUN \
       --requirement dist/constraints.txt \
       --wheel-dir dist/vendor
 
-# Пакетирование проекта в dist
 RUN poetry build --format wheel
 
 
@@ -44,10 +38,8 @@ FROM base AS final
 SHELL [ "/bin/sh", "-eu", "-c" ]
 WORKDIR /app
 
-# Из стадии сборки берём только dist (колёса проекта и зависимостей)
 COPY --from=build /build/dist/ dist/
 
-# Установка всех собранных пакетов
 RUN \
   packages=$(\
     find 'dist' 'dist/vendor' \

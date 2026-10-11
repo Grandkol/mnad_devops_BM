@@ -1,11 +1,8 @@
-# Вариант 1: одна стадия, процесс работает от root
 FROM python:3.11.6-slim-bookworm
 
 SHELL [ "/bin/sh", "-eu", "-c" ]
 WORKDIR /build
 
-# Poetry и инструменты сборки пакетов.
-# poetry-plugin-export: в Poetry 2.x команда `poetry export` вынесена в плагин
 RUN \
   python -m pip install \
     --no-color \
@@ -20,7 +17,6 @@ RUN \
 COPY pyproject.toml poetry.lock README.md ./
 COPY src/ src/
 
-# Загрузка всех зависимостей в dist/vendor
 RUN \
   mkdir -p dist \
   && poetry export \
@@ -33,10 +29,8 @@ RUN \
       --requirement dist/constraints.txt \
       --wheel-dir dist/vendor
 
-# Пакетирование проекта в dist
 RUN poetry build --format wheel
 
-# Установка всех собранных пакетов
 RUN \
   packages=$(\
     find 'dist' 'dist/vendor' \
