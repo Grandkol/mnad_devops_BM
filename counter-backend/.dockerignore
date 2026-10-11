@@ -1,0 +1,14 @@
+# Всё, что не нужно для сборки образа
+.git/
+.venv/
+.cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+dist/
+build/
+*.egg-info/
+server.tar.gz
+.env
+Dockerfile*
+.dockerignore

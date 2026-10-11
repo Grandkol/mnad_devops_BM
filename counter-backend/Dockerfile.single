@@ -1,0 +1,63 @@
+# Вариант 1: одна стадия, процесс работает от root
+FROM python:3.11.6-slim-bookworm
+
+SHELL [ "/bin/sh", "-eu", "-c" ]
+WORKDIR /build
+
+# Poetry и инструменты сборки пакетов.
+# poetry-plugin-export: в Poetry 2.x команда `poetry export` вынесена в плагин
+RUN \
+  python -m pip install \
+    --no-color \
+    --no-cache-dir \
+    --disable-pip-version-check \
+    --no-python-version-warning \
+    --no-warn-script-location \
+    --break-system-packages \
+    --progress-bar off \
+    poetry poetry-plugin-export setuptools wheel
+
+COPY pyproject.toml poetry.lock README.md ./
+COPY src/ src/
+
+# Загрузка всех зависимостей в dist/vendor
+RUN \
+  mkdir -p dist \
+  && poetry export \
+    --without-hashes \
+    --format constraints.txt \
+    --output dist/constraints.txt \
+  && poetry run \
+    python -m pip wheel \
+      --isolated \
+      --requirement dist/constraints.txt \
+      --wheel-dir dist/vendor
+
+# Пакетирование проекта в dist
+RUN poetry build --format wheel
+
+# Установка всех собранных пакетов
+RUN \
+  packages=$(\
+    find 'dist' 'dist/vendor' \
+      -maxdepth 1 \
+      -iname '*.whl' \
+      -exec realpath {} \; \
+      -print0 \
+    | xargs --null) \
+  && python -m pip install \
+    --isolated \
+    --no-index \
+    --no-color \
+    --no-cache-dir \
+    --disable-pip-version-check \
+    --no-python-version-warning \
+    --no-warn-script-location \
+    --no-deps \
+    --break-system-packages \
+    --progress-bar off \
+    ${packages}
+
+ENV PORT=8080
+EXPOSE 8080
+CMD [ "python", "-m", "counter_backend" ]

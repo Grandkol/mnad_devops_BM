@@ -1,0 +1,87 @@
+# Вариант 3: многоступенчатая сборка + понижение привилегий
+FROM python:3.11.6-slim-bookworm AS base
+
+
+FROM base AS build
+SHELL [ "/bin/sh", "-eu", "-c" ]
+WORKDIR /build
+
+# Poetry и инструменты сборки пакетов.
+# poetry-plugin-export: в Poetry 2.x команда `poetry export` вынесена в плагин
+RUN \
+  python -m pip install \
+    --no-color \
+    --no-cache-dir \
+    --disable-pip-version-check \
+    --no-python-version-warning \
+    --no-warn-script-location \
+    --break-system-packages \
+    --progress-bar off \
+    poetry poetry-plugin-export setuptools wheel
+
+COPY pyproject.toml poetry.lock README.md ./
+COPY src/ src/
+
+# Загрузка всех зависимостей в dist/vendor
+RUN \
+  mkdir -p dist \
+  && poetry export \
+    --without-hashes \
+    --format constraints.txt \
+    --output dist/constraints.txt \
+  && poetry run \
+    python -m pip wheel \
+      --isolated \
+      --requirement dist/constraints.txt \
+      --wheel-dir dist/vendor
+
+# Пакетирование проекта в dist
+RUN poetry build --format wheel
+
+
+
+FROM base AS final
+SHELL [ "/bin/sh", "-eu", "-c" ]
+WORKDIR /app
+
+# Из стадии сборки берём только dist (колёса проекта и зависимостей)
+COPY --from=build /build/dist/ dist/
+
+# Установка всех собранных пакетов
+RUN \
+  packages=$(\
+    find 'dist' 'dist/vendor' \
+      -maxdepth 1 \
+      -iname '*.whl' \
+      -exec realpath {} \; \
+      -print0 \
+    | xargs --null) \
+  && python -m pip install \
+    --isolated \
+    --no-index \
+    --no-color \
+    --no-cache-dir \
+    --disable-pip-version-check \
+    --no-python-version-warning \
+    --no-warn-script-location \
+    --no-deps \
+    --break-system-packages \
+    --progress-bar off \
+    ${packages}
+
+
+# Непривилегированный пользователь (скрипт из семинара 3)
+ARG USER=user
+ARG HOME=/app
+ARG UID=1001
+ARG GID=1001
+RUN \
+  addgroup --gid "${GID}" "${USER}" \
+  && adduser --disabled-password --gecos "" \
+       --home "${HOME}" --ingroup "${USER}" --uid "${UID}" "${USER}"
+
+USER ${USER}
+
+ENV PORT=8080
+EXPOSE 8080
+CMD [ "python", "-m", "counter_backend" ]
