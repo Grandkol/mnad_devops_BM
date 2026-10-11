@@ -77,7 +77,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "bps"
         },
         "overrides": []
       },
@@ -183,7 +184,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -276,7 +278,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "bytes"
         },
         "overrides": []
       },
@@ -369,7 +372,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unit": "percent"
         },
         "overrides": []
       },
@@ -452,5 +456,5 @@
   "timezone": "browser",
   "title": "back",
   "uid": "13abc9c5-d9e5-439d-9afc-60e09727770d",
-  "version": 6
+  "version": 10
 }
