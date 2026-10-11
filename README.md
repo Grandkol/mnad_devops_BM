@@ -58,11 +58,6 @@ $ curl -s 'localhost:9090/api/v1/query?query=up{job="node"}'
 
 Dockerfile лежат в `counter-backend/`: `Dockerfile.single`, `Dockerfile.multistage`, `Dockerfile.nonroot`.
 
-Одно отличие от команд из задания: вместе с Poetry ставлю `poetry-plugin-export`.
-В Poetry 2.x без этого плагина нет команды `poetry export`.
-
-Сборка:
-
 ```console
 $ cd counter-backend
 $ docker build -f Dockerfile.single -t counter-backend:single .
